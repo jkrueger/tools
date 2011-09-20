@@ -21,7 +21,7 @@
 (defn parser-finished?
   "Checks if a parser has successfully consumed all of it's input"
   [in]
-  (and (not (parser-fail? in))
+  (and (clojure.core/not (parser-fail? in))
        (empty? (second in))))
 
 ;;; this section defines what can be turned into a parser function
@@ -55,12 +55,18 @@
             m   (.matcher pat in)]
         (when (.find m)
           (let [match (.group m)]
-            [match (without-match match in)]))))))
+            [match (without-match match in)])))))
+  java.lang.Object
+  (as-parser [this]
+    (throw (java.lang.IllegalArgumentException. (str "Not a supported parser type: " this))))
+  nil
+  (as-parser [_]
+    (throw (java.lang.IllegalArgumentException. "Not a supported parser type: nil"))))
 
 ;;; helpers for defining or running parsers
 
 (defn- skip-transform-bindings [skip-parser-sym bindings]
-  (let [skip-binding `[_# (many* ~skip-parser-sym)]
+  (let [skip-binding `[_# (* ~skip-parser-sym)]
         bindings (->> bindings
                       (partition 2)
                       (interpose skip-binding)
@@ -128,7 +134,7 @@
    predicate evaluates to a value that is not logically false"
   [predicate]
   (fn [in]
-    (when (and (not (empty? in))
+    (when (and (clojure.core/not (empty? in))
                (predicate (first in)))
       [(first in) (rest in)])))
 
@@ -147,20 +153,20 @@
 (defn ?
   "The parser may apply another parser or not"
   [rule]
-  (one rule (lambda)))
+  (or rule (lambda)))
 
-(declare many+)
+(declare +)
 
 (defn *
   "Returns a parser that applies a subparser 0 or more times to it's input"
   [rule]
-  (? (many+ rule)))
+  (? (+ rule)))
 
 (defn +
   "Returns a parser that applies a subparser 1 or more times to it's input"
   [rule]
   (parser [first rule
-           rest  (many* rule)]
+           rest  (* rule)]
     (concat [first] rest)))
 
 (defn times
