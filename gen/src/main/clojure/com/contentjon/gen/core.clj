@@ -24,44 +24,15 @@
   (and (clojure.core/not (parser-fail? in))
        (empty? (second in))))
 
-;;; this section defines what can be turned into a parser function
-;;; and how this is done
-
-(defn- without-match [match in]
-  (.substring in (.length match) (.length in)))
+(defn parse
+  "Uses a parser to parse the input and returns the result of the parsing process"
+  [rule in]
+  (rule in))
 
 (defprotocol AsParser
+  "this section defines what can be turned into a parser function
+    and how this is done"
   (as-parser [_]))
-
-(extend-protocol AsParser
-  clojure.lang.IFn
-  (as-parser [this] this)
-  java.lang.Character
-  (as-parser [this]
-    (fn [in]
-      (let [length (.length in)]
-        (when (and (> length 0)
-                   (= (.charAt in 0) this))
-          [this (.substring in 1 length)]))))
-  java.lang.String
-  (as-parser [this]
-    (fn [in]
-      (when (.startsWith in this)
-        [this (without-match this in)])))
-  java.util.regex.Pattern
-  (as-parser [this]
-    (fn [in]
-      (let [pat (java.util.regex.Pattern/compile (str "^" this ""))
-            m   (.matcher pat in)]
-        (when (.find m)
-          (let [match (.group m)]
-            [match (without-match match in)])))))
-  java.lang.Object
-  (as-parser [this]
-    (throw (java.lang.IllegalArgumentException. (str "Not a supported parser type: " this))))
-  nil
-  (as-parser [_]
-    (throw (java.lang.IllegalArgumentException. "Not a supported parser type: nil"))))
 
 ;;; helpers for defining or running parsers
 
@@ -111,11 +82,6 @@
                          -skip
                          ~bindings
                          ~body))))
-
-(defn parse
-  "Uses a parser to parse the input and returns the result of the parsing process"
-  [rule in]
-  (rule in))
 
 ;;; public matching functions
 
@@ -220,3 +186,68 @@
      (surrounder around around))
   ([before after]
      #(surround % before after)))
+
+;;; parser coercsions
+
+(defn- without-match [match in]
+  (.substring in (.length match) (.length in)))
+
+(defn descend [rule]
+  (parser [stream (fetch-state) :let [f (first stream)]
+           _      (set-state (if (string? f)
+                               f
+                               (seq (first stream))))
+           result rule
+           _      (assert-state empty?)
+           _      (set-state (rest stream))]
+          result))
+
+(defn maybe-descend [rule]
+  (fn [in]
+    (if (sequential? in)
+      (parse (descend rule) in)
+      (parse rule in))))
+
+(extend-protocol AsParser
+  java.lang.Character
+  (as-parser [this]
+    (fn [in]
+      (let [length (.length in)]
+        (when (and (> length 0)
+                   (= (.charAt in 0) this))
+          [this (.substring in 1 length)]))))
+  java.lang.String
+  (as-parser [this]
+    (maybe-descend
+     (fn [in]
+        (when (.startsWith in this)
+          [this (without-match this in)]))))
+  java.util.regex.Pattern
+  (as-parser [this]
+    (maybe-descend
+     (fn [in]
+       (let [pat (java.util.regex.Pattern/compile (str "^" this ""))
+             m   (.matcher pat in)]
+         (when (.find m)
+           (let [match (.group m)]
+             [match (without-match match in)]))))))
+  clojure.lang.IPersistentVector
+  (as-parser [this]
+    (let [rule (* (apply or (map as-parser this)))]
+      (descend rule)))
+  clojure.lang.IPersistentMap
+  (as-parser [this]
+    (descend
+      (parser [pairs (+ (descend
+                          (parser [k (of this)
+                                   v (get this k)]
+                            [k v])))]
+       (into {} pairs))))
+  clojure.lang.Fn
+  (as-parser [this] this)
+  java.lang.Object
+  (as-parser [this]
+    (throw (java.lang.IllegalArgumentException. (str "Not a supported parser type: " this))))
+  nil
+  (as-parser [_]
+    (throw (java.lang.IllegalArgumentException. "Not a supported parser type: nil"))))

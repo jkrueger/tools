@@ -1,7 +1,7 @@
 (ns com.contentjon.gen.lang.text
   "Generic text generation utilities functions"
   (:require [clojure.string :as str])
-  (:use [com.contentjon.fn.algo :only [applier]]))
+  (:use [com.contentjon.fn.algo :only [applier mapper]]))
 
 (def ^:dynamic *endl*   "\n")
 (def ^:dynamic *indent* "  ")
@@ -29,11 +29,11 @@
 (def commas     (joiner ", "))
 (def semicolons (joiner "; "))
 
-(def words*      (applier words))
-(def lines*      (applier lines))
-(def paragraphs* (applier paragraphs))
-(def commas*     (applier commas))
-(def semicolons* (applier semicolons))
+(def words*      (mapper words))
+(def lines*      (mapper lines))
+(def paragraphs* (mapper paragraphs))
+(def commas*     (mapper commas))
+(def semicolons* (mapper semicolons))
 
 (defn block [cmds]
   (-> cmds
