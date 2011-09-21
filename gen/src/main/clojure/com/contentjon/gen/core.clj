@@ -37,12 +37,12 @@
   clojure.lang.IFn
   (as-parser [this] this)
   java.lang.Character
-  (as-string [this]
+  (as-parser [this]
     (fn [in]
       (let [length (.length in)]
         (when (and (> length 0)
                    (= (.charAt in 0) this))
-          [this (.substring 1 length)]))))
+          [this (.substring in 1 length)]))))
   java.lang.String
   (as-parser [this]
     (fn [in]
@@ -76,7 +76,10 @@
 (defn- bindings->parser [bindings]
   (->> bindings
        (partition 2)
-       (map (fn [[s p]] (vector s `(as-parser ~p))))
+       (map (fn [[s p]]
+              (if (some #{s} [:when :let])
+                [s p]
+                (vector s `(as-parser ~p)))))
        (apply concat)))
 
 (defmacro parser
