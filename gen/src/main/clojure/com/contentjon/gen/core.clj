@@ -13,7 +13,7 @@
 (def #^{:doc "Takes the result of a parser and checks if it failed"}
   parser-fail? nil?)
 
-(defn parse-result
+(defn result
   "Return the result of a parse process"
   [in]
   (first in))
@@ -136,6 +136,7 @@
   [rule]
   (parser [first rule
            rest  (* rule)]
+
     (concat [first] rest)))
 
 (defn times
@@ -187,13 +188,21 @@
   ([before after]
      #(surround % before after)))
 
+(defn log
+  "Wraps a parser and logs its input"
+  [msg rule]
+  (fn [in]
+    (println msg in)
+    (rule in)))
+
 ;;; parser coercsions
 
 (defn- without-match [match in]
   (.substring in (.length match) (.length in)))
 
 (defn descend [rule]
-  (parser [stream (fetch-state) :let [f (first stream)]
+  (parser [stream (fetch-state) :when (clojure.core/not (empty? stream))
+           :let  [f (first stream)]
            _      (set-state (if (string? f)
                                f
                                (seq (first stream))))
@@ -238,11 +247,11 @@
   clojure.lang.IPersistentMap
   (as-parser [this]
     (descend
-      (parser [pairs (+ (descend
-                          (parser [k (of this)
-                                   v (get this k)]
-                            [k v])))]
-       (into {} pairs))))
+     (parser [pairs (+ (descend
+                        (parser [k (of this)
+                                 v (get this k)]
+                                [k v])))]
+             (into {} pairs))))
   clojure.lang.Fn
   (as-parser [this] this)
   java.lang.Object
