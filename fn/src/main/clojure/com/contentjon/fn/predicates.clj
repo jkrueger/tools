@@ -1,5 +1,5 @@
 (ns com.contentjon.fn.predicates
-  (:refer-clojure :exclude [class? every? contains?]))
+  (:refer-clojure :exclude [class? every? contains? isa?]))
 
 (defn and?
   "Takes n predicates and returns a predicate that returns
