@@ -40,3 +40,10 @@
 (def paragraphs* (caller paragraphs))
 (def commas*     (caller commas))
 (def semicolons* (caller semicolons))
+
+(defn block [cmds]
+  (-> cmds
+      lines*
+      (prepend *endl*)
+      indent
+      (append *endl*)))
