@@ -46,9 +46,10 @@
   (txt/parens
     (txt/words (interpose o args))))
 
-(def or*  (partial op "||"))
-(def and* (partial op "&&"))
-(def eq*  (partial op "=="))
+(def or*   (partial op "||"))
+(def and*  (partial op "&&"))
+(def eq*   (partial op "=="))
+(def neq*  (partial op "!="))
 
 (def or  (applier or*))
 (def and (applier and*))
@@ -56,6 +57,7 @@
 
 (def && (partial op "&&"))
 (def == (partial op "=="))
+(def != (partial op "!="))
 
 (defn bool-op [o args]
   (if (= (count args)
