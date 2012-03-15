@@ -1,5 +1,5 @@
 (ns com.contentjon.gen.lang.curly
-  (:refer-clojure :exclude (and cast for or))
+  (:refer-clojure :exclude (and cast for or ==))
   (:require [com.contentjon.gen.lang.text :as txt])
   (:use [com.contentjon.fn.algo :only [applier]]))
 
